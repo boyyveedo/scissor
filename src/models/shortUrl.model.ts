@@ -10,6 +10,8 @@ export interface shortURL extends Document {
     shortId: string
     destination: string
     customAlias?: string;
+    clicks: number;
+
 }
 
 const urlSchema = new mongoose.Schema({
@@ -20,6 +22,8 @@ const urlSchema = new mongoose.Schema({
         default: () => nanoid(6),
     },
     destination: { type: String, required: true },
+    clicks: { type: Number, required: true, default: 0 },
+
     customAlias: {
         type: String,
         unique: true,

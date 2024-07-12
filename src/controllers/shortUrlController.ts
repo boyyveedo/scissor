@@ -1,5 +1,7 @@
 import { Response, Request } from "express";
 import { createShortUrlService, getShortUrlByShortId } from "../services/shortUrlService";
+import { analytics } from "../models/analytic.mode";
+import { shortUrl } from "../models/shortUrl.model";
 
 function isErrorWithMessage(error: unknown): error is { message: string } {
     return typeof error === 'object' && error !== null && 'message' in error;
@@ -23,6 +25,7 @@ export async function handleRedirect(req: Request, res: Response) {
     try {
         const { shortId } = req.params;
         const short = await getShortUrlByShortId(shortId);
+        analytics.create({ shortId: short._id })
         return res.redirect(short.destination);
     } catch (error) {
         console.error("Error handling redirect:", error);
@@ -32,3 +35,22 @@ export async function handleRedirect(req: Request, res: Response) {
         return res.status(500).json({ error: "Internal Server Error" });
     }
 }
+
+
+export async function getAnalytics(req: Request, res: Response) {
+    try {
+        const data = await analytics.find({}).lean();
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error('Error fetching analytics:', error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+
+
+
+
+
+
+

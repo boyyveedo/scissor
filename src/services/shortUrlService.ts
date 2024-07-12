@@ -24,9 +24,12 @@ export async function createShortUrlService(destination: string, customAlias?: s
 }
 
 export async function getShortUrlByShortId(shortId: string) {
-    const short = await shortUrl.findOne({ shortId }).lean();
+    const short = await shortUrl.findOne({ shortId });
     if (!short) {
         throw new Error('URL not found');
     }
+    short.clicks++;
+    await short.save();
     return short;
 }
+
