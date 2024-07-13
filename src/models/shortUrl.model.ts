@@ -11,6 +11,8 @@ export interface shortURL extends Document {
     destination: string
     customAlias?: string;
     clicks: number;
+    user: mongoose.Schema.Types.ObjectId; // Reference to User model
+
 
 }
 
@@ -23,7 +25,7 @@ const urlSchema = new mongoose.Schema({
     },
     destination: { type: String, required: true },
     clicks: { type: Number, required: true, default: 0 },
-
+    //user: { type: String, required: true }, // Change to String
     customAlias: {
         type: String,
         unique: true,

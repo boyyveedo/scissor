@@ -1,22 +1,16 @@
 import { shortUrl } from "../models/shortUrl.model";
 import { nanoid } from "nanoid";
 
-export async function createShortUrlService(destination: string, customAlias?: string) {
-    // Check if a custom alias is provided and if it's valid
+export async function createShortUrlService(destination: string, userId: string, customAlias?: string) {
     if (customAlias) {
-        // Check if the custom url already exists in the database
         const existingUrl = await shortUrl.findOne({ shortId: customAlias });
-
         if (existingUrl) {
             throw new Error('Custom URL already in use');
         }
     }
 
-    // Determine the short ID to use
     const shortId = customAlias || nanoid(6);
-
-    // Create a new URL document
-    const newUrlData = { shortId, destination };
+    const newUrlData = { shortId, destination, user: userId };
     const newUrl = new shortUrl(newUrlData);
     await newUrl.save();
 
@@ -33,3 +27,7 @@ export async function getShortUrlByShortId(shortId: string) {
     return short;
 }
 
+export async function getLinkHistoryByUserId(userId: string) {
+    const userLinks = await shortUrl.find({ user: userId }).lean();
+    return userLinks;
+}

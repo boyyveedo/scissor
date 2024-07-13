@@ -1,6 +1,6 @@
 import { Response, Request } from "express";
-import { createShortUrlService, getShortUrlByShortId } from "../services/shortUrlService";
-import { analytics } from "../models/analytic.mode";
+import { createShortUrlService, getShortUrlByShortId, getLinkHistoryByUserId } from "../services/shortUrlService";
+import { analytics } from "../models/analytic.model";
 import { shortUrl } from "../models/shortUrl.model";
 
 function isErrorWithMessage(error: unknown): error is { message: string } {
@@ -10,7 +10,14 @@ function isErrorWithMessage(error: unknown): error is { message: string } {
 export async function createShortUrl(req: Request, res: Response): Promise<Response> {
     try {
         const { destination, customAlias } = req.body;
-        const newUrl = await createShortUrlService(destination, customAlias);
+        const user = req.oidc?.user;
+
+        if (!user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const userId = user.sub;
+        const newUrl = await createShortUrlService(destination, userId, customAlias);
         return res.status(201).json({ newUrl });
     } catch (error) {
         console.error("Error creating short URL:", error);
@@ -25,7 +32,7 @@ export async function handleRedirect(req: Request, res: Response) {
     try {
         const { shortId } = req.params;
         const short = await getShortUrlByShortId(shortId);
-        analytics.create({ shortId: short._id })
+        await analytics.create({ shortId: short._id, user: short.user }); // Include the user ID in analytics
         return res.redirect(short.destination);
     } catch (error) {
         console.error("Error handling redirect:", error);
@@ -36,10 +43,16 @@ export async function handleRedirect(req: Request, res: Response) {
     }
 }
 
-
 export async function getAnalytics(req: Request, res: Response) {
     try {
-        const data = await analytics.find({}).lean();
+        const user = req.oidc?.user;
+
+        if (!user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const userId = user.sub;
+        const data = await analytics.find({ user: userId }).lean(); // Filter analytics by user ID
         return res.status(200).json(data);
     } catch (error) {
         console.error('Error fetching analytics:', error);
@@ -47,10 +60,19 @@ export async function getAnalytics(req: Request, res: Response) {
     }
 }
 
+export async function getLinkHistory(req: Request, res: Response) {
+    try {
+        const user = req.oidc?.user;
 
+        if (!user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
 
-
-
-
-
-
+        const userId = user.sub;
+        const userLinks = await getLinkHistoryByUserId(userId);
+        return res.status(200).json(userLinks);
+    } catch (error) {
+        console.error('Error fetching link history:', error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+}
