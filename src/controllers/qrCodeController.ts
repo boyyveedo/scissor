@@ -1,9 +1,16 @@
-// src/controllers/qrCodeController.ts
 import { Request, Response } from 'express';
 import { generateQRCode } from '../services/qrCodeService';
 
 export const getQRCode = async (req: Request, res: Response): Promise<void> => {
     try {
+        // Check if the user is authenticated
+        const user = req.oidc?.user;
+
+        if (!user) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+
         const { data } = req.query;
         if (typeof data !== 'string') {
             res.status(400).send('Invalid data');
